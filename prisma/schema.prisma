@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum ChallengeDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+model User {
+  id            String   @id @default(cuid())
+  firstName     String
+  lastName      String
+  username      String   @unique
+  email         String   @unique
+  password      String
+  role          Role     @default(USER)
+  avatar        String?
+  bio           String?
+  streak        Int      @default(0)
+  longestStreak Int      @default(0)
+  preferences   Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  habits            Habit[]
+  habitLogs         HabitLog[]
+  tasks             Task[]
+  challenges        ChallengeProgress[]
+  journals          Journal[]
+  notifications     Notification[]
+  adminLogs         AdminLog[]
+  createdChallenges Challenge[] @relation("ChallengeCreatedBy")
+
+  @@map("users")
+}
+
+model Habit {
+  id          String         @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  category    String?
+  frequency   HabitFrequency @default(DAILY)
+  goal        Int            @default(1)
+  color       String?
+  icon        String?
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs        HabitLog[]
+
+  @@index([userId, active])
+  @@map("habits")
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  userId    String
+  date      DateTime @default(now())
+  completed Boolean  @default(false)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, userId, date])
+  @@index([userId, date])
+  @@map("habit_logs")
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(PENDING)
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("tasks")
+}
+
+model Challenge {
+  id           String              @id @default(cuid())
+  title        String
+  description  String?
+  difficulty   ChallengeDifficulty @default(MEDIUM)
+  durationDays Int                 @default(30)
+  active       Boolean             @default(true)
+  isTemplate   Boolean             @default(false)
+  createdById  String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  createdBy    User?               @relation("ChallengeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  progress     ChallengeProgress[]
+
+  @@index([active, isTemplate])
+  @@map("challenges")
+}
+
+model ChallengeProgress {
+  id          String    @id @default(cuid())
+  challengeId String
+  userId      String
+  progress    Int       @default(0)
+  currentDay  Int       @default(1)
+  completed   Boolean   @default(false)
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([userId, completed])
+  @@map("challenge_progress")
+}
+
+model Journal {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  content   String
+  mood      String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("journals")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+model AdminLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  action      String
+  description String?
+  ip          String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  admin       User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+  @@map("admin_logs")
+}

@@ -262,8 +262,8 @@ exports.getMe = async (req, res, next) => {
 exports.logout = (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
+    sameSite: "none",
   });
 
   res.json({

@@ -17,8 +17,25 @@ exports.createEntry = async (req, res, next) => {
 
 exports.getEntries = async (req, res, next) => {
   try {
+    const { startDate, endDate, mood } = req.query;
+    const where = { userId: req.user.id };
+
+    if (startDate || endDate) {
+      where.date = {};
+      if (startDate) {
+        where.date.gte = new Date(startDate);
+      }
+      if (endDate) {
+        where.date.lte = new Date(endDate);
+      }
+    }
+
+    if (mood) {
+      where.mood = mood;
+    }
+
     const entries = await prisma.journal.findMany({
-      where: { userId: req.user.id },
+      where,
       orderBy: [
         { date: 'desc' },
         { createdAt: 'desc' },
@@ -26,6 +43,25 @@ exports.getEntries = async (req, res, next) => {
     });
 
     res.json(entries);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getEntryById = async (req, res, next) => {
+  try {
+    const entry = await prisma.journal.findFirst({
+      where: {
+        id: req.params.id,
+        userId: req.user.id,
+      },
+    });
+
+    if (!entry) {
+      return res.status(404).json({ message: 'Journal entry not found' });
+    }
+
+    res.json(entry);
   } catch (error) {
     next(error);
   }

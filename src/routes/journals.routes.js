@@ -1,5 +1,5 @@
 const express = require('express');
-const { createEntry, getEntries, updateEntry, deleteEntry } = require('../controllers/journal.controller');
+const { createEntry, getEntries, getEntryById, updateEntry, deleteEntry } = require('../controllers/journal.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 
 const router = express.Router();
@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(authenticate);
 router.post('/', createEntry);
 router.get('/', getEntries);
+router.get('/:id', getEntryById);
 router.put('/:id', updateEntry);
 router.delete('/:id', deleteEntry);
 
